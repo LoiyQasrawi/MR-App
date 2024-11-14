@@ -1,0 +1,62 @@
+<html>
+  <head>
+    <title>Camera | Simple | LiveKit x Quest Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@1.5.0/dist/livekit-client.umd.min.js"></script>
+    <script src="/livekitConfig.js"></script>
+  </head>
+
+  <body>
+    <h1>Camera | Simple | LiveKit x Quest Pro</h1>
+
+    <button id="joinRoomButton" onclick="joinRoom()">Join Room</button>
+    <select id="cameraDevices"></select>
+
+    <video id="cameraVideo"></video>
+  </body>
+
+  <script>
+    const cameraDevices = document.getElementById("cameraDevices");
+    LivekitClient.Room.getLocalDevices("videoinput").then((devices) => {
+      devices.forEach((device) => {
+        const option = new Option(device.label, device.deviceId);
+        cameraDevices.appendChild(option);
+      });
+    });
+    cameraDevices.addEventListener("input", event => {
+      room.switchActiveDevice('videoinput', event.target.value);
+    })
+
+    const room = new LivekitClient.Room();
+    room
+      .on(LivekitClient.RoomEvent.Connected, handleConnected)
+      .on(
+        LivekitClient.RoomEvent.LocalTrackPublished,
+        handleLocalTrackPublished
+      )
+      .on(
+        LivekitClient.RoomEvent.LocalTrackUnpublished,
+        handleLocalTrackUnpublished
+      );
+
+    function handleConnected() {
+      joinRoomButton.remove();
+    }
+    function handleLocalTrackPublished({ track }) {
+      console.log(track);
+      track.attach(cameraVideo);
+    }
+    function handleLocalTrackUnpublished({ track }) {
+      track.detach();
+    }
+
+    const joinRoomButton = document.getElementById("joinRoomButton");
+    const cameraVideo = document.getElementById("cameraVideo");
+    async function joinRoom() {
+      console.log("joining room...");
+      await room.connect(livekitConfig.url, livekitConfig.accessTokens.camera);
+      console.log("connected to room", room.name);
+      room.switchActiveDevice('videoinput', cameraDevices.value);
+      room.localParticipant.setCameraEnabled(true);
+    }
+  </script>
+</html>
